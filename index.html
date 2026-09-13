@@ -179,7 +179,7 @@ hr.s{border:0;border-top:1px solid var(--sep);margin:11px 0}
    3. זיכרון בלבד     (מוצא אחרון)
 ================================================================ */
 const KEY='budget_app_v1';
-const APP_VERSION='2.1';
+const APP_VERSION='3.0';
 let MEM=null, STORE_MODE='memory', LAST_SAVE=0;
 
 /* ----------------------------------------------------------------
@@ -294,7 +294,9 @@ function blank(){
     baseline:0, baselineDate:iso(new Date()),
     cycle:{no:1,start:iso(new Date()),end:iso(addM(new Date(),1)),income:0},
     groups:[],cats:[],goals:[],fixed:[],plans:[],tx:[],cycles:[],
-    srcs:[{id:'s1',n:'אשראי',bill:10},{id:'s2',n:'עו״ש',bill:null},{id:'s3',n:'מזומן',bill:null}],
+    srcs:[{id:'s2',n:'עובר ושב',kind:'bank',bill:null},
+          {id:'s1',n:'כרטיס אשראי',kind:'credit',bill:10,into:'s2'},
+          {id:'s3',n:'מזומן',kind:'cash',bill:null}],
     notif:{morning:1,evening:1,alerts:1,mTime:'08:00',eTime:'21:00'},
     insightIx:0, seen:{}};
 }
@@ -329,6 +331,8 @@ const catColor=id=>{const g=grpOf(id);return g?g.c:'--gray'};
 const catEmoji=id=>{const c=cat(id);return c?c.e:'💳'};
 const catName=id=>{const c=cat(id);return c?c.n:'ללא סעיף'};
 const src=id=>D.srcs.find(s=>s.id===id);
+const srcIcon=x=>!x?'💳':x.kind==='bank'?'🏦':x.kind==='cash'?'💵':'💳';
+const srcName=id=>{const x=src(id);return x?x.n:'—'};
 const goal=id=>D.goals.find(g=>g.id===id);
 const liveCats=()=>D.cats.filter(c=>!c.arch);
 const liveFixed=()=>D.fixed.filter(f=>!f.paused&&(f.left===null||f.left>0));
@@ -341,13 +345,70 @@ const cycleIn=()=>inCycle().filter(t=>t.kind==='i').reduce((s,t)=>s+t.a,0);
 const cycleDep=()=>inCycle().filter(t=>t.kind==='g').reduce((s,t)=>s+t.a,0);
 const cycleWdr=()=>inCycle().filter(t=>t.kind==='w').reduce((s,t)=>s+t.a,0);
 const netSaved=()=>cycleDep()-cycleWdr();
-const balance=()=>D.baseline+D.tx.filter(t=>new Date(t.date)>=new Date(D.baselineDate))
+/* ----------------------------------------------------------------
+   מתי הכסף באמת עוזב את הבנק.
+   מזומן ועו״ש — באותו יום. אשראי — ביום החיוב של הכרטיס:
+   קנייה לפני יום החיוב נכנסת לחיוב הקרוב, אחריו — לחיוב הבא.
+---------------------------------------------------------------- */
+function settleDate(date,srcId){
+  const sc=src(srcId);
+  if(!sc||sc.kind!=='credit'||!sc.bill)return iso(date);
+  const d=new Date(date), day=d.getDate(), bill=Math.min(31,Math.max(1,sc.bill));
+  let m=d.getMonth(), y=d.getFullYear();
+  if(day>=bill){m++; if(m>11){m=0;y++}}
+  const last=new Date(y,m+1,0).getDate();
+  return iso(new Date(y,m,Math.min(bill,last),9,0,0));
+}
+function txSettle(t){return t.settle||settleDate(t.date,t.src)}
+
+/* יתרה בבנק — רק מה שכבר ירד בפועל */
+const balance=()=>D.baseline+D.tx
+  .filter(t=>new Date(t.date)>=new Date(D.baselineDate))
+  .filter(t=>new Date(txSettle(t))<=new Date())
   .reduce((s,t)=>s+(t.kind==='i'||t.kind==='w'?t.a:-t.a),0);
+
+/* מה שנקנה באשראי ועוד לא ירד */
+const pendingCredit=()=>D.tx
+  .filter(t=>t.kind==='e'&&new Date(txSettle(t))>new Date())
+  .reduce((s,t)=>s+t.a,0);
+
+/* היתרה האמיתית: מה שבבנק פחות מה שכבר מחויב באשראי */
+const realBalance=()=>balance()-pendingCredit();
+
+/* פירוט החיוב הקרוב לכל כרטיס */
+function cardBills(){
+  const out=[];
+  D.srcs.filter(x=>x.kind==='credit').forEach(c=>{
+    const items=D.tx.filter(t=>t.src===c.id&&t.kind==='e'&&new Date(txSettle(t))>new Date());
+    if(!items.length)return;
+    const groups={};
+    items.forEach(t=>{const k=fInput(txSettle(t));(groups[k]=groups[k]||[]).push(t)});
+    Object.entries(groups).sort().forEach(([d,ts])=>
+      out.push({card:c,date:d,sum:ts.reduce((s,t)=>s+t.a,0),n:ts.length}));
+  });
+  return out.sort((a,b)=>new Date(a.date)-new Date(b.date));
+}
 const goalTotal=()=>D.goals.reduce((s,g)=>s+g.cur,0);
 
-const chargedKey=()=>'c'+D.cycle.no;
+/* המפתח הוא חודש קלנדרי, לא מספר מחזור.
+   קודם ההוצאה סומנה "שולמה" לפי מחזור — ולכן אם לא סגרת מחזור,
+   היא לא חזרה להופיע בחודש הבא. זה היה הבאג. */
+const chargedKey=(d)=>{const x=d?new Date(d):new Date();
+  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')};
+
+/* התאריך שבו ההוצאה אמורה לרדת בחודש הנוכחי */
+function dueThisMonth(day){
+  const n=new Date(), last=new Date(n.getFullYear(),n.getMonth()+1,0).getDate();
+  return new Date(n.getFullYear(),n.getMonth(),Math.min(day,last),9,0,0);
+}
+/* כמה ימים עד החיוב הבא. שלילי = התאריך כבר עבר ולא נרשם */
+function daysToCharge(day){ return dayDiff(new Date(),dueThisMonth(day)) }
+const isOverdue=f=>f.last!==chargedKey()&&daysToCharge(f.day)<=0;
+
 const pendFixed=()=>liveFixed().filter(f=>f.last!==chargedKey());
+const overdueFixed=()=>liveFixed().filter(isOverdue);
 const pendPlans=()=>livePlans().filter(p=>p.last!==chargedKey());
+const overduePlans=()=>livePlans().filter(p=>p.last!==chargedKey()&&daysToCharge(p.day)<=0);
 const upcoming=()=>pendFixed().reduce((s,f)=>s+f.a,0)+pendPlans().reduce((s,p)=>s+p.per,0);
 const nextCommit=()=>liveFixed().reduce((s,f)=>s+f.a,0)+livePlans().reduce((s,p)=>s+p.per,0);
 const futureTotal=()=>livePlans().reduce((s,p)=>s+p.per*p.left,0)
@@ -544,9 +605,18 @@ function _drawSheet(){
     const list = kind==='i' ? [] : liveCats();
     const rem = selCat? planOf(selCat)-spentOn(selCat) : null;
     b.innerHTML=dateRow+`
-      <div class="lbl">אמצעי תשלום</div>
-      <div class="chips" style="margin-top:5px">${D.srcs.map(s=>
-        `<div class="chip ${s.id===selSrc?'on':''}" onclick="selSrc='${s.id}';drawSheet()">${esc(s.n)}</div>`).join('')}</div>
+      <div class="row"><div class="lbl" style="flex:1">מאיפה זה יוצא</div>
+        <div class="lbl" onclick="closeAll();open2('srcs')"
+          style="color:var(--accent);cursor:pointer">נהל ›</div></div>
+      <div class="chips" style="margin-top:5px">${D.srcs.map(x=>
+        `<div class="chip ${x.id===selSrc?'on':''}" onclick="selSrc='${x.id}';drawSheet();paint()">${srcIcon(x)} ${esc(x.n)}</div>`).join('')}
+        <div class="chip" onclick="newSrc()">＋</div></div>
+      ${(()=>{const x=src(selSrc);
+        if(!x||x.kind!=='credit'||!x.bill)return '';
+        const sd=settleDate(new Date(txDate),selSrc);
+        return `<div style="margin-top:8px;padding:9px 11px;border-radius:11px;background:var(--fill)">
+          <div class="cap" style="line-height:1.5">💳 יירד מהחשבון ב-<b style="color:var(--ink)">${fFull(sd)}</b>
+          — לא היום. היתרה בבנק לא תשתנה עכשיו.</div></div>`})()}
       ${kind==='e'?`
       <div class="lbl" style="margin-top:13px">סעיף הוצאה</div>
       ${quickCombos()}
@@ -636,6 +706,7 @@ function _save(){
     if(t.kind==='g'||t.kind==='w'){const g=goal(t.goal);
       if(g){g.cur+= (t.kind==='g'?-t.a:t.a); g.cur+= (t.kind==='g'?a:-a)}}
     Object.assign(t,{a,date:dt,cat:kind==='e'?selCat:t.cat,src:selSrc,note:noteVal});
+    t.settle=settleDate(dt,selSrc);
     undoBuf=()=>{const x=D.tx.find(y=>y.id===editId);Object.assign(x,before)};
     closeAll();commit();toast('התנועה עודכנה',1);return;
   }
@@ -645,13 +716,14 @@ function _save(){
     if(dir==='out'&&a>g.cur){toast('אין מספיק בקופה');return}
     g.cur+= dir==='in'? a : -a;
     const t={id:nid(),a,date:dt,kind:dir==='in'?'g':'w',goal:g.id,src:selSrc,
+      settle:settleDate(dt,selSrc),
       note:noteVal||((dir==='in'?'הפקדה ל':'משיכה מ')+g.n)};
     D.tx.unshift(t);
     undoBuf=()=>{g.cur-= dir==='in'? a:-a;D.tx=D.tx.filter(x=>x.id!==t.id)};
     closeAll();commit();toast((dir==='in'?'הופקד ':'נמשך ')+nis(a)+' · '+g.n,1);return;
   }
   if(kind==='i'){
-    const t={id:nid(),a,date:dt,kind:'i',src:selSrc,note:noteVal||'הכנסה'};
+    const t={id:nid(),a,date:dt,kind:'i',src:selSrc,settle:dt,note:noteVal||'הכנסה'};
     D.tx.unshift(t);undoBuf=()=>{D.tx=D.tx.filter(x=>x.id!==t.id)};
     closeAll();commit();toast('נרשמה הכנסה '+nis(a),1);
     if(a>=(D.profile.income||0)*0.6&&a>1000)setTimeout(()=>askSalary(a),450);
@@ -663,12 +735,13 @@ function _save(){
       left:payN-1,day:(src(selSrc)||{}).bill||2,note:payFor||noteVal||'עסקה בתשלומים',last:chargedKey()};
     D.plans.push(p);
     const t={id:nid(),a:per,date:dt,kind:'e',cat:selCat,src:selSrc,plan:p.id,
+      settle:settleDate(dt,selSrc),
       note:(payFor||noteVal||catName(selCat))+' · תשלום 1/'+payN};
     D.tx.unshift(t);
     undoBuf=()=>{D.plans=D.plans.filter(x=>x.id!==p.id);D.tx=D.tx.filter(x=>x.id!==t.id)};
     closeAll();commit();toast('נפרס ל-'+payN+' תשלומים של '+nis(per),1);return;
   }
-  const t={id:nid(),a,date:dt,kind:'e',cat:selCat,src:selSrc,note:noteVal};
+  const t={id:nid(),a,date:dt,kind:'e',cat:selCat,src:selSrc,settle:settleDate(dt,selSrc),note:noteVal};
   D.tx.unshift(t);undoBuf=()=>{D.tx=D.tx.filter(x=>x.id!==t.id)};
   closeAll();commit();
   const sd=safeDay(),st=spentToday();
@@ -728,7 +801,7 @@ function render(){
     fab.classList.toggle('hidden',!!sub||tab!=='home');
     tabbar.classList.toggle('hidden',!!sub);
     const V=sub?({cats:vCats,fixed:vFixed,plans:vPlans,notes:vNotes,set:vSet,
-      goal:vGoal,reports:vReports,report:vReport})[sub]:({home:vHome,goals:vGoals,tx:vTx,ai:vAI})[tab];
+      goal:vGoal,reports:vReports,report:vReport,srcs:vSrcs})[sub]:({home:vHome,goals:vGoals,tx:vTx,ai:vAI})[tab];
     view.innerHTML=V?V():'';
     view.firstElementChild&&view.firstElementChild.classList.add('fade');
   }catch(e){ oops(e) }
@@ -768,7 +841,8 @@ function txRow(t,showBal){
     <div class="ic" style="background:color-mix(in srgb,var(${col}) 15%,transparent)">${em}</div>
     <div style="min-width:0;flex:1"><div style="font-size:14.5px;font-weight:560;
         overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ttl)}</div>
-      <div class="cap" style="font-size:11.5px">${g||w?'קופה':catName(t.cat)}${t.src?' · '+(src(t.src)||{}).n:''}</div></div>
+      <div class="cap" style="font-size:11.5px">${g||w?'קופה':catName(t.cat)}${t.src?' · '+esc(srcName(t.src)):''}${
+        new Date(txSettle(t))>new Date()?' · ירד '+fShort(txSettle(t)):''}</div></div>
     <div style="text-align:left"><div class="mono" style="font-size:14.5px;
       color:${g?'var(--blue)':(w||i)?'var(--green)':'inherit'}">${w||i?'+':''}${nis(t.a)}</div>
       <div class="cap" style="font-size:11px">${fShort(t.date)}</div></div></div>`;
@@ -802,12 +876,26 @@ function vHome(){
        − ${nis(cycleOut())} שהוצאת ÷ ${daysLeft()} ימים</div>
    </div>
 
+   ${overdueFixed().length?`<div class="card" onclick="open2('fixed')"
+     style="padding:13px;background:rgba(217,128,38,.13);border:0">
+     <div class="row"><div style="font-size:19px">⏰</div>
+       <div><div style="font-size:13.5px;font-weight:640">
+         ${overdueFixed().length} הוצאות קבועות עברו את תאריך החיוב</div>
+         <div class="cap" style="margin-top:2px;line-height:1.4">
+           ${nis(overdueFixed().reduce((s,f)=>s+f.a,0))} שעדיין לא נרשמו ›</div></div></div></div>`:''}
    <div class="card">
      <div class="row"><div style="flex:1">
        <div class="lbl">יתרה בחשבון</div>
        <div class="big" style="font-size:25px">${nis(balance())}</div></div>
        <div style="text-align:left"><div class="lbl">מחזור ${D.cycle.no}</div>
          <div class="cap">יום ${cycleDay()} מתוך ${cycleLen()}</div></div></div>
+     ${pendingCredit()>0?`<hr class="s">
+     <div class="row" onclick="open2('srcs')" style="cursor:pointer">
+       <div style="flex:1"><div class="cap" style="line-height:1.5">
+         ממתין לחיוב באשראי <b style="color:var(--orange)">${nis(pendingCredit())}</b></div>
+         <div class="cap" style="margin-top:2px">באמת זמין לך:
+           <b style="color:var(${realBalance()>=0?'--green':'--red'})">${nis(realBalance())}</b></div></div>
+       <span class="cap">›</span></div>`:''}
      ${nextCommit()>0?`<hr class="s">
      <div class="row" onclick="open2('plans')" style="cursor:pointer">
        <div class="cap" style="flex:1;line-height:1.5">
@@ -815,7 +903,8 @@ function vHome(){
        <span class="cap">›</span></div>`:''}
      <div class="row" style="margin-top:11px;gap:7px">
        <button class="btn soft tiny" style="flex:1" onclick="open2('fixed')">🔁 קבועות</button>
-       <button class="btn soft tiny" style="flex:1" onclick="open2('plans')">🧾 תשלומים</button></div>
+       <button class="btn soft tiny" style="flex:1" onclick="open2('plans')">🧾 תשלומים</button>
+       <button class="btn soft tiny" style="flex:1" onclick="open2('srcs')">💳 אמצעים</button></div>
    </div>
 
    ${D.goals.length?`<div class="card">
@@ -964,7 +1053,8 @@ function vTx(){
      <div class="card" style="padding:8px 15px">${ts.map(t=>txRow(t)).join('<hr class="s" style="margin:2px 0">')}</div>
    `).join('')}
    <div class="card"><b class="h">ניהול</b>
-     ${[['קטגוריות וסעיפים',`${D.cats.length} סעיפים`,'cats'],
+     ${[['אמצעי תשלום',`${D.srcs.length} · ${nis(pendingCredit())} ממתין`,'srcs'],
+        ['קטגוריות וסעיפים',`${D.cats.length} סעיפים`,'cats'],
         ['הוצאות קבועות',`${liveFixed().length} פעילות · ${nis(liveFixed().reduce((s,f)=>s+f.a,0))}`,'fixed'],
         ['עסקאות בתשלומים',`${livePlans().length} פעילות · ${nis(futureTotal())}`,'plans'],
         ['הגדרות וגיבוי','','set']].map(([l,r,s])=>
@@ -1054,39 +1144,133 @@ function newGroup(){openForm('קטגוריה ראשית חדשה',[
   if(!f.n){toast('צריך שם');return}
   D.groups.push({id:nid(),n:f.n,e:f.e||'🎯',c:f.c||'--teal'});closeAll();commit();toast('נוספה')})}
 
-/* ---------- הוצאות קבועות ---------- */
-function nextChargeIn(day){
-  const now=new Date();let d=new Date(now.getFullYear(),now.getMonth(),day);
-  if(d<sod(now))d=new Date(now.getFullYear(),now.getMonth()+1,day);
-  return dayDiff(now,d);
+/* ---------- אמצעי תשלום ---------- */
+function vSrcs(){
+  const bills=cardBills();
+  return `<div><div class="back" onclick="go('tx')">‹ תנועות</div>
+   <div class="title">אמצעי תשלום<span class="txtact" onclick="newSrc()">＋ חדש</span></div><div class="pad">
+   <div class="card row" style="gap:14px">
+     <div style="flex:1"><div class="lbl">יש בבנק</div>
+       <div class="big" style="font-size:21px">${nis(balance())}</div></div>
+     <div style="width:1px;height:36px;background:var(--sep)"></div>
+     <div style="flex:1"><div class="lbl">ממתין באשראי</div>
+       <div class="big" style="font-size:21px;color:var(--orange)">${nis(pendingCredit())}</div></div>
+     <div style="width:1px;height:36px;background:var(--sep)"></div>
+     <div style="flex:1"><div class="lbl">באמת זמין</div>
+       <div class="big" style="font-size:21px;color:var(${realBalance()>=0?'--green':'--red'})">${nis(realBalance())}</div></div>
+   </div>
+   ${bills.length?`<div class="card"><b class="h">חיובים קרובים</b>
+     ${bills.map(b=>`<div class="tx" style="padding:9px 0">
+       <div class="ic" style="background:var(--accent-soft)">💳</div>
+       <div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:560">${esc(b.card.n)}</div>
+         <div class="cap" style="font-size:11.5px">${b.n} עסקאות · ירד ב-${fFull(b.date)}</div></div>
+       <div class="mono" style="font-size:15px;font-weight:700">${nis(b.sum)}</div></div>`)
+       .join('<hr class="s" style="margin:2px 0">')}
+     <div class="cap" style="margin-top:10px;line-height:1.55">
+       הסכומים האלה כבר הוצאת, אבל הם עוד לא ירדו מהבנק. לכן "באמת זמין" נמוך מהיתרה.</div></div>`:''}
+   ${D.srcs.map(x=>{
+     const used=D.tx.filter(t=>t.src===x.id).length;
+     const next=x.kind==='credit'&&x.bill?dueThisMonth(x.bill):null;
+     return `<div class="card">
+     <div class="row">
+       <div class="ic" style="background:var(--fill);font-size:16px">${srcIcon(x)}</div>
+       <div style="min-width:0;flex:1">
+         <b style="font-size:15px;font-weight:650">${esc(x.n)}</b>
+         <div class="cap" style="margin-top:2px">
+           ${x.kind==='bank'?'חשבון עו״ש · יורד מיד':
+             x.kind==='cash'?'מזומן · יורד מיד':
+             `כרטיס אשראי · חיוב ב-${x.bill} לחודש${x.into?' → '+esc(srcName(x.into)):''}`}
+           · ${used} תנועות</div></div>
+       <button class="btn soft tiny" onclick="editSrc('${x.id}')">✎</button>
+       ${D.srcs.length>1?`<button class="btn soft tiny" onclick="delSrcAsk('${x.id}')">🗑</button>`:''}
+     </div></div>`}).join('')}
+   <div class="card" style="background:var(--accent-soft);border:0"><div class="cap" style="line-height:1.6;color:var(--ink)">
+     <b>למה יום החיוב חשוב:</b> קנייה באשראי לא עוזבת את החשבון ביום הקנייה.
+     ברגע שהגדרת את יום החיוב, האפליקציה יודעת מתי הכסף באמת יורד — ומפרידה בין
+     "כמה הוצאתי" לבין "כמה יש לי".</div></div>
+   <div style="height:16px"></div></div></div>`;
 }
+function srcFields(x){
+  const banks=D.srcs.filter(b=>b.kind==='bank');
+  return [
+   {k:'n',l:'שם',t:'text',v:x?x.n:'',p:'למשל: ויזה כאל'},
+   {k:'kind',l:'סוג',t:'select',opts:['🏦 חשבון בנק','💳 כרטיס אשראי','💵 מזומן'],
+     v:x?['bank','credit','cash'].indexOf(x.kind||'credit'):1},
+   {k:'bill',l:'יום החיוב בחודש (לאשראי בלבד)',t:'num',v:x?x.bill:'',p:'10'},
+   ...(banks.length?[{k:'into',l:'מאיזה חשבון יורד החיוב',t:'select',
+     opts:banks.map(b=>b.n),v:x&&x.into?Math.max(0,banks.findIndex(b=>b.id===x.into)):0}]:[]),
+   {t:'note',k:'_',l:'קנייה שנעשית לפני יום החיוב נכנסת לחיוב הקרוב. אחריו — לחיוב של החודש הבא.'}];
+}
+function applySrc(o,f){
+  const banks=D.srcs.filter(b=>b.kind==='bank'&&b.id!==o.id);
+  o.n=f.n||o.n||'אמצעי';
+  o.kind=['bank','credit','cash'][+f.kind||0]||'credit';
+  o.bill=o.kind==='credit'?Math.min(31,Math.max(1,+f.bill||10)):null;
+  o.into=o.kind==='credit'&&banks.length?(banks[+f.into||0]||banks[0]).id:null;
+  return o;
+}
+function newSrc(){openForm('אמצעי תשלום חדש',srcFields(null),f=>{
+  if(!f.n){toast('צריך שם');return}
+  D.srcs.push(applySrc({id:nid()},f));
+  form.classList.remove('on');
+  const stay=sheet.classList.contains('on');
+  if(!stay)scrim.classList.remove('on');
+  persist(); if(stay){drawSheet();paint()}else{render()}
+  toast('נוסף');})}
+function editSrc(id){const x=src(id);openForm('עריכת '+x.n,srcFields(x),f=>{
+  applySrc(x,f);
+  /* יום החיוב השתנה — מחשבים מחדש מתי כל תנועה יורדת */
+  D.tx.forEach(t=>{if(t.src===id)t.settle=settleDate(t.date,id)});
+  closeAll();commit();toast('עודכן')})}
+function delSrcAsk(id){const x=src(id);const used=D.tx.filter(t=>t.src===id).length;
+  confirmDo('למחוק את '+x.n+'?',
+    used?`${used} תנועות ישויכו לאמצעי הראשון ברשימה.`:'לא משויכות אליו תנועות.','מחק',()=>{
+    D.srcs=D.srcs.filter(y=>y.id!==id);
+    const fb=D.srcs[0]?D.srcs[0].id:null;
+    D.tx.forEach(t=>{if(t.src===id){t.src=fb;t.settle=settleDate(t.date,fb)}});
+    D.fixed.forEach(f=>{if(f.src===id)f.src=fb});
+    D.plans.forEach(p=>{if(p.src===id)p.src=fb});
+    commit();toast('נמחק')})}
+
+/* ---------- הוצאות קבועות ---------- */
 function vFixed(){
-  const live=liveFixed().slice().sort((a,b)=>nextChargeIn(a.day)-nextChargeIn(b.day));
-  const pend=pendFixed();
+  const live=liveFixed().slice().sort((a,b)=>daysToCharge(a.day)-daysToCharge(b.day));
+  const pend=pendFixed(), od=overdueFixed();
   return `<div><div class="back" onclick="go('tx')">‹ תנועות</div>
    <div class="title">הוצאות קבועות<span class="txtact" onclick="newFixed()">＋ חדשה</span></div><div class="pad">
    <div class="card row" style="gap:14px">
      <div style="flex:1"><div class="lbl">כל חודש</div>
        <div class="big" style="font-size:22px">${nis(live.reduce((s,f)=>s+f.a,0))}</div></div>
      <div style="width:1px;height:36px;background:var(--sep)"></div>
-     <div style="flex:1"><div class="lbl">עוד לא ירד</div>
+     <div style="flex:1"><div class="lbl">עוד לא נרשם</div>
        <div class="big" style="font-size:22px;color:var(--orange)">${nis(pend.reduce((s,f)=>s+f.a,0))}</div></div>
    </div>
+   ${od.length?`<div class="card" style="background:rgba(217,128,38,.13);border:0">
+     <div class="row"><div style="font-size:20px">⏰</div>
+       <div style="flex:1"><b style="font-size:14.5px">${od.length} הוצאות עברו את תאריך החיוב</b>
+         <div class="cap" style="margin-top:2px;line-height:1.45">
+           ${od.map(f=>esc(f.n)+' ('+nis(f.a)+')').join(' · ')}</div></div></div>
+     <button class="btn" style="margin-top:12px" onclick="chargeAllOverdue()">
+       ✓ רשום את כולן — ${nis(od.reduce((s,f)=>s+f.a,0))}</button>
+     <div class="cap" style="margin-top:8px;line-height:1.5">
+       כל אחת תירשם בתאריך החיוב האמיתי שלה, לא בתאריך של היום.</div></div>`:''}
    ${!D.fixed.length?`<div class="card" style="text-align:center;padding:26px">
      <div style="font-size:30px">🔁</div><b class="h" style="margin-top:8px">אין הוצאות קבועות</b>
      <div class="cap" style="line-height:1.55">שכר דירה, מנויים, ביטוחים — כל מה שיורד באותו יום כל חודש.</div>
      <button class="btn ghost" style="margin-top:13px" onclick="newFixed()">הוסף ראשונה</button></div>`:''}
    ${D.fixed.map(f=>{const done=f.last===chargedKey(),ended=f.left!==null&&f.left<=0;
-     const inD=nextChargeIn(f.day);
+     const inD=daysToCharge(f.day), late=!done&&inD<=0;
      return `<div class="card" style="opacity:${ended||f.paused?'.55':'1'}">
      <div class="row">
        <div class="ic" style="background:color-mix(in srgb,var(${catColor(f.cat)}) 15%,transparent)">${catEmoji(f.cat)}</div>
        <div style="min-width:0;flex:1">
          <div class="row"><b style="font-size:15px;font-weight:650">${esc(f.n)}</b>
            ${f.paused?`<span style="font-size:10px;background:var(--fill);padding:2px 8px;border-radius:999px">מוקפא</span>`:
-            done?`<span style="font-size:10px;background:rgba(46,158,107,.15);color:var(--green);padding:2px 8px;border-radius:999px;font-weight:640">ירד</span>`:
+            done?`<span style="font-size:10px;background:rgba(46,158,107,.15);color:var(--green);padding:2px 8px;border-radius:999px;font-weight:640">נרשם החודש</span>`:
+            late?`<span style="font-size:10px;background:rgba(192,57,43,.15);color:var(--red);padding:2px 8px;border-radius:999px;font-weight:640">${inD===0?'היום':'באיחור '+Math.abs(inD)+' ימים'}</span>`:
             `<span style="font-size:10px;background:rgba(217,128,38,.15);color:var(--orange);padding:2px 8px;border-radius:999px;font-weight:640">בעוד ${inD} ימים</span>`}</div>
          <div class="cap" style="margin-top:2px">${catName(f.cat)} · ב-${f.day} לחודש ·
+           ${srcIcon(src(f.src))} ${esc(srcName(f.src))} ·
            ${f.left===null?'ללא הגבלה':'עד '+fMonth(addM(new Date(),f.left))}</div></div>
        <div style="text-align:left"><div class="mono" style="font-size:16px;font-weight:700">${nis(f.a)}</div>
          ${f.left?`<div class="cap" style="font-size:10.5px">סה״כ ${nis(f.a*f.left)}</div>`:''}</div></div>
@@ -1096,7 +1280,8 @@ function vFixed(){
        <i style="width:${(1-f.left/f.months)*100}%;background:var(${catColor(f.cat)})"></i></div>
        <div class="cap" style="margin-top:4px;font-size:11px">שולמו ${f.months-f.left} מתוך ${f.months}</div>`:''}
      <div class="row" style="margin-top:11px;gap:6px">
-       ${!done&&!ended&&!f.paused?`<button class="btn ghost tiny" style="flex:1" onclick="chargeFixed('${f.id}')">✓ רשום שירד</button>`:''}
+       ${!done&&!ended&&!f.paused?`<button class="btn ${late?'':'ghost'} tiny" style="flex:1"
+         onclick="chargeFixed('${f.id}')">✓ רשום שירד${late?' ('+fShort(dueThisMonth(f.day))+')':''}</button>`:''}
        <button class="btn soft tiny" onclick="pauseFixed('${f.id}')">${f.paused?'▶':'⏸'}</button>
        <button class="btn soft tiny" onclick="editFixed('${f.id}')">✎</button>
        <button class="btn soft tiny" onclick="delFixedAsk('${f.id}')">🗑</button></div></div>`}).join('')}
@@ -1111,6 +1296,8 @@ function fixFields(f){return[
     v:f?Math.max(0,liveCats().findIndex(c=>c.id===f.cat)):0},
   {k:'a',l:'סכום חודשי (₪)',t:'num',v:f?f.a:'',p:'250'},
   {k:'day',l:'יום החיוב בחודש',t:'num',v:f?f.day:1,p:'1'},
+  {k:'src',l:'מאיפה זה יוצא',t:'select',opts:D.srcs.map(x=>srcIcon(x)+' '+x.n),
+    v:f&&f.src?Math.max(0,D.srcs.findIndex(x=>x.id===f.src)):Math.max(0,D.srcs.findIndex(x=>x.kind==='bank')),},
   {k:'dur',l:'למשך כמה זמן',t:'select',opts:DUR.map(d=>d.l),v:f?Math.max(0,DUR.findIndex(d=>d.v===f.months)):0},
   {k:'note',l:'לטובת מה? (יופיע בדוח)',t:'text',v:f?f.note:'',p:'למשל: פוליסה שנתית בפריסה'}]}
 function newFixed(){
@@ -1119,13 +1306,14 @@ function newFixed(){
     if(!f.n||!(+f.a>0)){toast('צריך שם וסכום');return}
     const m=DUR[+f.dur||0].v;
     D.fixed.push({id:nid(),n:f.n,cat:(liveCats()[+f.cat||0]||{}).id,a:+f.a,day:Math.min(31,Math.max(1,+f.day||1)),
+      src:(D.srcs[+f.src||0]||D.srcs[0]||{}).id,
       months:m,left:m,note:f.note||'',last:null,paused:false});
     closeAll();commit();toast('נוספה')})}
 function editFixed(id){const x=D.fixed.find(f=>f.id===id);
   openForm('עריכת '+x.n,fixFields(x),f=>{const m=DUR[+f.dur||0].v;
     Object.assign(x,{n:f.n||x.n,cat:(liveCats()[+f.cat||0]||{}).id,a:+f.a||x.a,
-      day:Math.min(31,Math.max(1,+f.day||1)),months:m,
-      left:m===null?null:(x.months===m?x.left:m),note:f.note||''});
+      day:Math.min(31,Math.max(1,+f.day||1)),src:(D.srcs[+f.src||0]||D.srcs[0]||{}).id,
+      months:m,left:m===null?null:(x.months===m?x.left:m),note:f.note||''});
     closeAll();commit();toast('עודכן')})}
 function pauseFixed(id){const f=D.fixed.find(x=>x.id===id);f.paused=!f.paused;commit();
   toast(f.paused?'הוקפאה':'הופעלה מחדש')}
@@ -1134,12 +1322,30 @@ function delFixedAsk(id){const f=D.fixed.find(x=>x.id===id);
     const i=D.fixed.indexOf(f);D.fixed.splice(i,1);
     undoBuf=()=>D.fixed.splice(i,0,f);commit();toast('נמחקה',1)})}
 function chargeFixed(id){const f=D.fixed.find(x=>x.id===id);
-  const t={id:nid(),a:f.a,date:iso(new Date()),kind:'e',cat:f.cat,src:D.srcs[1]?D.srcs[1].id:null,
-    note:f.n+(f.note?' · '+f.note:''),fixed:f.id};
+  /* נרשם בתאריך החיוב האמיתי, לא בתאריך שנזכרת ללחוץ */
+  const when=daysToCharge(f.day)<=0?dueThisMonth(f.day):new Date();
+  const sc=f.src&&src(f.src)?f.src:(D.srcs.find(x=>x.kind==='bank')||D.srcs[0]||{}).id;
+  const t={id:nid(),a:f.a,date:iso(when),kind:'e',cat:f.cat,src:sc,
+    settle:settleDate(when,sc),note:f.n+(f.note?' · '+f.note:''),fixed:f.id};
   D.tx.unshift(t);const prevLeft=f.left,prevLast=f.last;
   f.last=chargedKey();if(f.left!==null)f.left=Math.max(0,f.left-1);
   undoBuf=()=>{D.tx=D.tx.filter(x=>x.id!==t.id);f.left=prevLeft;f.last=prevLast};
   commit();toast('נרשם '+nis(f.a),1)}
+
+/* רושם בבת אחת את כל מה שכבר עבר את התאריך */
+function chargeAllOverdue(){
+  const list=overdueFixed();if(!list.length)return;
+  const snap=JSON.stringify({tx:D.tx,fixed:D.fixed});
+  list.forEach(f=>{
+    const when=dueThisMonth(f.day);
+    const sc=f.src&&src(f.src)?f.src:(D.srcs.find(x=>x.kind==='bank')||D.srcs[0]||{}).id;
+    D.tx.unshift({id:nid(),a:f.a,date:iso(when),kind:'e',cat:f.cat,src:sc,
+      settle:settleDate(when,sc),note:f.n+(f.note?' · '+f.note:''),fixed:f.id});
+    f.last=chargedKey();if(f.left!==null)f.left=Math.max(0,f.left-1);
+  });
+  undoBuf=()=>{const o=JSON.parse(snap);D.tx=o.tx;D.fixed=o.fixed};
+  commit();toast(list.length+' הוצאות נרשמו',1);
+}
 
 /* ---------- תשלומים ---------- */
 function vPlans(){
@@ -1168,7 +1374,7 @@ function vPlans(){
        <div class="ic" style="background:color-mix(in srgb,var(${catColor(p.cat)}) 15%,transparent)">${catEmoji(p.cat)}</div>
        <div style="min-width:0;flex:1"><b style="font-size:15px;font-weight:650">${esc(p.n)}</b>
          <div class="cap" style="margin-top:2px">${catName(p.cat)} · ${nis(p.total)} ב-${p.cnt} תשלומים
-           ${p.day?' · חיוב ב-'+p.day:''}</div></div>
+           ${p.day?' · חיוב ב-'+p.day:''} · ${srcIcon(src(p.src))} ${esc(srcName(p.src))}</div></div>
        <div style="text-align:left"><div class="mono" style="font-size:16px;font-weight:700">${nis(p.per)}</div>
          <div class="cap" style="font-size:10.5px">לחודש</div></div></div>
      ${p.note?`<div class="cap" style="margin-top:9px;background:var(--fill);padding:9px 11px;
@@ -1179,7 +1385,8 @@ function vPlans(){
        <span>${p.left>0?'נותרו '+nis(p.per*p.left)+' · '+fMonth(addM(new Date(),p.left))
          :'הסתיים ✓'}</span></div>
      <div class="row" style="margin-top:11px;gap:6px">
-       ${p.left>0&&!done?`<button class="btn ghost tiny" style="flex:1" onclick="chargePlan('${p.id}')">✓ רשום תשלום</button>`:''}
+       ${p.left>0&&!done?`<button class="btn ${daysToCharge(p.day)<=0?'':'ghost'} tiny" style="flex:1"
+         onclick="chargePlan('${p.id}')">✓ רשום תשלום${daysToCharge(p.day)<=0?' (עבר התאריך)':''}</button>`:''}
        ${p.left>0?`<button class="btn soft tiny" onclick="payoffAsk('${p.id}')">סילוק</button>`:''}
        <button class="btn soft tiny" onclick="editPlan('${p.id}')">✎</button>
        <button class="btn soft tiny" onclick="delPlanAsk('${p.id}')">🗑</button></div></div>`}).join('')}
@@ -1192,7 +1399,9 @@ function planFields(p){return[
   {k:'total',l:'סכום העסקה הכולל (₪)',t:'num',v:p?p.total:'',p:'5400'},
   {k:'cnt',l:'מספר תשלומים',t:'num',v:p?p.cnt:12,p:'12'},
   {k:'left',l:'כמה תשלומים עוד נותרו',t:'num',v:p?p.left:'',p:'12'},
-  {k:'day',l:'יום החיוב באשראי',t:'num',v:p?p.day:10,p:'10'},
+  {k:'day',l:'יום החיוב בחודש',t:'num',v:p?p.day:10,p:'10'},
+  {k:'src',l:'באיזה אמצעי',t:'select',opts:D.srcs.map(x=>srcIcon(x)+' '+x.n),
+    v:p&&p.src?Math.max(0,D.srcs.findIndex(x=>x.id===p.src)):Math.max(0,D.srcs.findIndex(x=>x.kind==='credit')),},
   {k:'note',l:'הערה',t:'text',v:p?p.note:'',p:'לא חובה'}]}
 function newPlan(){
   if(!liveCats().length){toast('קודם צור סעיף');return}
@@ -1201,17 +1410,19 @@ function newPlan(){
     if(!f.n||!(+f.total>0)){toast('צריך שם וסכום');return}
     D.plans.push({id:nid(),n:f.n,cat:(liveCats()[+f.cat||0]||{}).id,total:+f.total,cnt,
       per:Math.round(+f.total/cnt),left:Math.min(cnt,+f.left||cnt),day:+f.day||10,
-      note:f.note||'',last:null});
+      src:(D.srcs[+f.src||0]||D.srcs[0]||{}).id,note:f.note||'',last:null});
     closeAll();commit();toast('נוספה')})}
 function editPlan(id){const x=D.plans.find(p=>p.id===id);
   openForm('עריכת '+x.n,planFields(x),f=>{const cnt=Math.max(1,+f.cnt||x.cnt);
     Object.assign(x,{n:f.n||x.n,cat:(liveCats()[+f.cat||0]||{}).id,total:+f.total||x.total,cnt,
       per:Math.round((+f.total||x.total)/cnt),left:Math.min(cnt,+f.left||x.left),
-      day:+f.day||x.day,note:f.note||''});
+      day:+f.day||x.day,src:(D.srcs[+f.src||0]||D.srcs[0]||{}).id,note:f.note||''});
     closeAll();commit();toast('עודכן')})}
 function chargePlan(id){const p=D.plans.find(x=>x.id===id);
-  const t={id:nid(),a:p.per,date:iso(new Date()),kind:'e',cat:p.cat,plan:p.id,
-    src:D.srcs[0]?D.srcs[0].id:null,note:p.n+' · תשלום '+(p.cnt-p.left+1)+'/'+p.cnt};
+  const when=daysToCharge(p.day)<=0?dueThisMonth(p.day):new Date();
+  const psc=p.src&&src(p.src)?p.src:(D.srcs.find(x=>x.kind==='credit')||D.srcs[0]||{}).id;
+  const t={id:nid(),a:p.per,date:iso(when),kind:'e',cat:p.cat,plan:p.id,
+    src:psc,settle:settleDate(when,psc),note:p.n+' · תשלום '+(p.cnt-p.left+1)+'/'+p.cnt};
   D.tx.unshift(t);const pl=p.left,ls=p.last;p.left=Math.max(0,p.left-1);p.last=chargedKey();
   undoBuf=()=>{D.tx=D.tx.filter(x=>x.id!==t.id);p.left=pl;p.last=ls};
   commit();toast('נרשם תשלום '+nis(p.per),1)}
@@ -1238,9 +1449,17 @@ function notes(){
   if(D.notif.evening) o.push({ic:'🌙',ti:D.notif.eTime,t:`ערב טוב! נשארו לך ${nis(Math.max(0,lm))} לחודש`,
     b:`שיוצא בממוצע ${nis(sd)} ליום ל-${daysLeft()} הימים הבאים.${st>0?` היום הוצאת ${nis(st)}.`:' היום עוד לא רשמת כלום.'}`});
   const soon=pendFixed().concat(pendPlans().map(p=>({n:p.n,a:p.per,day:p.day})))
-    .filter(x=>nextChargeIn(x.day)<=5);
+    .filter(x=>daysToCharge(x.day)<=5);
   if(soon.length) o.push({ic:'📅',ti:'תזכורת',t:`${nis(soon.reduce((s,x)=>s+x.a,0))} יורדים בימים הקרובים`,
-    b:soon.map(x=>`${esc(x.n)} (${nis(x.a)}, בעוד ${nextChargeIn(x.day)} ימים)`).join(' · ')});
+    b:soon.map(x=>{const d=daysToCharge(x.day);
+      return esc(x.n)+' ('+nis(x.a)+', '+(d<0?'עבר לפני '+Math.abs(d)+' ימים':d===0?'היום':'בעוד '+d+' ימים')+')'}).join(' · ')});
+  const odf=overdueFixed();
+  if(odf.length) o.unshift({ic:'⏰',ti:'דורש טיפול',
+    t:`${odf.length} הוצאות קבועות עברו את תאריך החיוב`,
+    b:`${nis(odf.reduce((s,f)=>s+f.a,0))} שעוד לא נרשמו: ${odf.map(f=>esc(f.n)).join(' · ')}. עד שתרשום אותן, "פנוי להוצאה" מציג מספר גבוה מדי.`});
+  if(pendingCredit()>0) o.push({ic:'💳',ti:'אשראי',
+    t:`${nis(pendingCredit())} ממתינים לחיוב`,
+    b:`הוצאת אותם אבל הם עוד לא ירדו מהבנק. יש בחשבון ${nis(balance())}, אבל באמת זמין לך ${nis(realBalance())}.`});
   if(nextCommit()>0) o.push({ic:'🧾',ti:'לפני משכורת',t:`${nis(nextCommit())} מהמשכורת הבאה כבר מחויבים`,
     b:`הוצאות קבועות ותשלומים. פנוי באמת: ${nis(Math.max(0,income()-nextCommit()))}.`});
   const g=D.goals.slice().sort((a,b)=>(b.cur/(b.tgt||1))-(a.cur/(a.tgt||1)))[0];
@@ -1535,10 +1754,7 @@ function editBaseline(){openForm('יתרה בחשבון',[
   {k:'a',l:'כמה יש עכשיו בעו״ש (₪)',t:'num',v:'',p:'4820'},
   {t:'note',k:'_',l:'סנכרון מול הבנק. מכאן והלאה כל תנועה שתירשם תעדכן את היתרה הזו.'}],f=>{
   D.baseline=+f.a||0;D.baselineDate=iso(new Date());closeAll();commit();toast('היתרה עודכנה')})}
-function newSrc(){openForm('אמצעי תשלום',[
-  {k:'n',l:'שם',t:'text',p:'למשל: ויזה כאל'},
-  {k:'bill',l:'יום חיוב בחודש (לאשראי)',t:'num',p:'10'}],f=>{
-  if(!f.n)return;D.srcs.push({id:nid(),n:f.n,bill:+f.bill||null});closeAll();commit();toast('נוסף')})}
+
 function resetAsk(){confirmDo('לאפס הכל?',
   'כל הנתונים יימחקו לצמיתות ותחזור לשאלון הפתיחה. הורד גיבוי קודם אם יש משהו ששווה לשמור.',
   'כן, מחק הכל',async()=>{await DB.wipe();D=blank();persist();wizard();toast('אופס')})}
@@ -1653,6 +1869,8 @@ function heal(){
   const goids=new Set(D.goals.map(g=>g.id));
   D.fixed=(D.fixed||[]).filter(f=>f&&f.id);
   D.fixed.forEach(f=>{f.n=String(f.n||'הוצאה');f.a=n(f.a);
+    if(!f.src||!sids.has(f.src))f.src=(D.srcs.find(x=>x.kind==='bank')||D.srcs[0]).id;
+    if(f.last&&/^c\d+$/.test(String(f.last)))f.last=null;
     f.day=Math.min(31,Math.max(1,n(f.day,1)));f.note=String(f.note||'');
     if(f.months!==null&&f.months!==undefined)f.months=n(f.months,null)||null;
     if(f.left!==null&&f.left!==undefined)f.left=n(f.left,0);
@@ -1660,18 +1878,35 @@ function heal(){
     if(!cids.has(f.cat))f.cat=D.cats[0]?D.cats[0].id:null});
   D.plans=(D.plans||[]).filter(p=>p&&p.id);
   D.plans.forEach(p=>{p.n=String(p.n||'עסקה');p.total=n(p.total);
+    if(!p.src||!sids.has(p.src))p.src=(D.srcs.find(x=>x.kind==='credit')||D.srcs[0]).id;
+    if(p.last&&/^c\d+$/.test(String(p.last)))p.last=null;
     p.cnt=Math.max(1,n(p.cnt,1));p.per=n(p.per)||Math.round(p.total/p.cnt);
     p.left=Math.max(0,Math.min(p.cnt,n(p.left)));p.day=Math.min(31,Math.max(1,n(p.day,10)));
     p.note=String(p.note||'');
     if(!cids.has(p.cat))p.cat=D.cats[0]?D.cats[0].id:null});
   D.srcs=(D.srcs||[]).filter(x=>x&&x.id);
-  if(!D.srcs.length)D.srcs=[{id:nid(),n:'אשראי',bill:10},{id:nid(),n:'עו״ש',bill:null}];
+  if(!D.srcs.length)D.srcs=[{id:nid(),n:'עובר ושב',kind:'bank',bill:null},
+                            {id:nid(),n:'כרטיס אשראי',kind:'credit',bill:10}];
+  D.srcs.forEach(x=>{
+    x.n=String(x.n||'אמצעי');
+    if(!x.kind){ const nm=x.n;
+      x.kind = x.bill ? 'credit'
+        : /מזומן|cash/i.test(nm) ? 'cash'
+        : /אשראי|ויזה|ישראכרט|מאסטר|כאל|לאומי קארד|max|visa|card/i.test(nm) ? 'credit' : 'bank'; }
+    if(x.kind==='credit'&&!x.bill)x.bill=10;
+    if(x.kind!=='credit')x.bill=null;
+  });
+  if(!D.srcs.some(x=>x.kind==='bank'))
+    D.srcs.unshift({id:nid(),n:'עובר ושב',kind:'bank',bill:null});
+  const bankId=(D.srcs.find(x=>x.kind==='bank')||{}).id;
+  D.srcs.forEach(x=>{if(x.kind==='credit'&&!x.into)x.into=bankId});
   const sids=new Set(D.srcs.map(x=>x.id));
   D.tx=(D.tx||[]).filter(t=>t&&t.id&&isFinite(Number(t.a))&&t.date&&!isNaN(new Date(t.date)));
   D.tx.forEach(t=>{t.a=Math.abs(n(t.a));t.note=String(t.note||'');
     if(t.cat&&!cids.has(t.cat))t.cat=null;
     if(t.goal&&!goids.has(t.goal))t.goal=null;
-    if(t.src&&!sids.has(t.src))t.src=D.srcs[0].id});
+    if(!t.src||!sids.has(t.src))t.src=D.srcs[0].id;
+    if(!t.settle||isNaN(new Date(t.settle)))t.settle=settleDate(t.date,t.src);});
   D.baseline=n(D.baseline);
   D.profile=D.profile||{income:0,salaryDay:10};
   D.profile.income=n(D.profile.income);
