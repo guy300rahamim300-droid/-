@@ -1,7 +1,7 @@
 /* Service worker — network-first.
    מביא תמיד גרסה טרייה כשיש רשת, ונופל לעותק שמור רק כשאין.
    ככה אין "התיישנות" מצד אחד, ויש עבודה אופליין מצד שני. */
-const CACHE='takziv-v3-0';
+const CACHE='takziv-v3-1';
 
 self.addEventListener('install', e=>{
   self.skipWaiting();

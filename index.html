@@ -37,7 +37,8 @@ body{font-family:var(--ui);background:var(--bg);color:var(--ink);
 @media(min-width:900px){body{background:#0B0D12}
   #root{height:820px;max-width:392px;border-radius:44px;box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 11px #000,0 0 0 13px #23262F}}
 .safe{height:env(safe-area-inset-top,0px);flex:none}
-.view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:110px}
+.view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 .view::-webkit-scrollbar{display:none}
 .pad{padding:0 15px}
 .title{font-size:29px;font-weight:750;letter-spacing:-.5px;padding:12px 19px 10px;display:flex;align-items:center;gap:9px}
@@ -54,12 +55,18 @@ body{font-family:var(--ui);background:var(--bg);color:var(--ink);
 .mono{font-variant-numeric:tabular-nums;font-family:var(--num);font-weight:600}
 hr.s{border:0;border-top:1px solid var(--sep);margin:11px 0}
 .tabbar{position:absolute;bottom:0;left:0;right:0;z-index:55;
-  background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(22px);
-  border-top:1px solid var(--sep);display:flex;padding:7px 4px calc(20px + env(safe-area-inset-bottom,0px))}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;
-  color:var(--muted);cursor:pointer;padding-top:5px;font-weight:550}
-.tab svg{width:25px;height:25px}
+  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(24px) saturate(180%);
+  border-top:1px solid var(--sep);display:flex;align-items:stretch;
+  padding:0 2px env(safe-area-inset-bottom,0px)}
+.tab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;font-size:10px;line-height:1;color:var(--muted);
+  cursor:pointer;font-weight:600;height:56px;padding:0 1px;
+  transition:color .15s}
+.tab svg{width:23px;height:23px;flex:none;stroke-width:1.8}
+.tab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .tab.on{color:var(--accent)}
+.tab.on svg{stroke-width:2.2}
+.tab:active{opacity:.6}
 .btn{border:0;border-radius:999px;padding:13px 20px;font:inherit;font-weight:640;font-size:15px;
   background:var(--accent);color:#fff;cursor:pointer;width:100%;
   transition:transform .12s cubic-bezier(.2,.8,.2,1),filter .15s}
@@ -69,8 +76,8 @@ hr.s{border:0;border-top:1px solid var(--sep);margin:11px 0}
 .btn.dngr{background:rgba(192,57,43,.14);color:var(--red)}
 .btn.tiny{padding:9px 13px;font-size:13px;width:auto}
 .btn:disabled{opacity:.35;pointer-events:none}
-.fab{position:absolute;bottom:calc(96px + env(safe-area-inset-bottom,0px));left:34px;right:34px;z-index:54;
-  box-shadow:0 14px 34px rgba(47,85,151,.42)}
+.fab{position:absolute;bottom:calc(70px + env(safe-area-inset-bottom,0px));left:26px;right:26px;z-index:54;
+  box-shadow:0 12px 30px rgba(47,85,151,.42)}
 .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chips.wrap{flex-wrap:wrap;overflow:visible}
@@ -104,7 +111,7 @@ hr.s{border:0;border-top:1px solid var(--sep);margin:11px 0}
 .sw i{width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:3px;transition:.2s;display:block}
 .swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2.5px solid transparent}
 .swatch.on{border-color:var(--ink)}
-.toast{position:absolute;bottom:calc(150px + env(safe-area-inset-bottom,0px));left:16px;right:16px;z-index:90;
+.toast{position:absolute;bottom:calc(132px + env(safe-area-inset-bottom,0px));left:16px;right:16px;z-index:90;
   background:rgba(28,28,30,.95);color:#fff;padding:12px 16px;border-radius:16px;font-size:14px;
   opacity:0;transform:translateY(14px);transition:.28s;backdrop-filter:blur(10px);font-weight:550;
   display:flex;align-items:center;gap:10px;pointer-events:none}
@@ -127,13 +134,22 @@ hr.s{border:0;border-top:1px solid var(--sep);margin:11px 0}
   <button class="btn fab hidden" id="fab" onclick="openSheet('e')">＋ &nbsp;רישום מהיר</button>
   <div class="tabbar" id="tabbar">
     <div class="tab on" data-t="home" onclick="go('home')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>בית</div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 10.2 12 3.8l8.5 6.4V19a1.7 1.7 0 0 1-1.7 1.7H5.2A1.7 1.7 0 0 1 3.5 19z"/>
+        <path d="M9.6 20.7v-6h4.8v6"/></svg><span>בית</span></div>
     <div class="tab" data-t="goals" onclick="go('goals')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></svg>חסכונות</div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1"/></svg><span>חסכונות</span></div>
     <div class="tab" data-t="tx" onclick="go('tx')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 6h16M4 12h16M4 18h10"/></svg>תנועות</div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.5 6.8h15M4.5 12h15M4.5 17.2h9"/></svg><span>תנועות</span></div>
     <div class="tab" data-t="ai" onclick="go('ai')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>תובנות</div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3.6 13.9 9 19.4 11l-5.5 2-1.9 5.4L10.1 13 4.6 11l5.5-2z"/></svg><span>תובנות</span></div>
+    <div class="tab" data-t="exp" onclick="go('exp')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6.5 3.6h7.6l4.4 4.4v12.4a1.6 1.6 0 0 1-1.6 1.6H6.5A1.6 1.6 0 0 1 4.9 20.4V5.2a1.6 1.6 0 0 1 1.6-1.6z"/>
+        <path d="M13.8 3.7V8.4h4.6M8.6 13h6.8M8.6 16.9h4.4"/></svg><span>סגירה</span></div>
   </div>
 
   <div class="scrim" id="scrim" onclick="closeAll()"></div>
@@ -179,7 +195,7 @@ hr.s{border:0;border-top:1px solid var(--sep);margin:11px 0}
    3. זיכרון בלבד     (מוצא אחרון)
 ================================================================ */
 const KEY='budget_app_v1';
-const APP_VERSION='3.0';
+const APP_VERSION='3.1';
 let MEM=null, STORE_MODE='memory', LAST_SAVE=0;
 
 /* ----------------------------------------------------------------
@@ -319,8 +335,13 @@ function fMonth(d){d=new Date(d);return HE_M[d.getMonth()]+' '+d.getFullYear()}
 function fInput(d){d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 
 /* ---------- כסף ---------- */
-const nis=v=>'₪'+Math.round(v).toLocaleString('en-US');
-const nis2=v=>'₪'+(Math.round(v*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* LRI…PDI — בידוד דו־כיווני.
+   בלי זה סימן השקל "קופץ" לצד הלא נכון בתוך משפט בעברית. */
+const LTR=s=>'\u2066'+s+'\u2069';
+const nis=v=>LTR('₪'+Math.round(v||0).toLocaleString('en-US'));
+const nisSigned=v=>LTR((v>=0?'+':'−')+'₪'+Math.abs(Math.round(v||0)).toLocaleString('en-US'));
+const nis2=v=>LTR('₪'+(Math.round((v||0)*100)/100).toLocaleString('en-US',
+  {minimumFractionDigits:2,maximumFractionDigits:2}));
 const grp=(v)=>{const [a,b]=String(v).split('.');
   return Number(a||0).toLocaleString('en-US')+(b!==undefined?'.'+b:'')};
 
@@ -432,7 +453,7 @@ let saveT=null;
 function persist(){clearTimeout(saveT);saveT=setTimeout(()=>DB.save(D),120)}
 function commit(){persist();render()}
 
-function go(t){tab=t;sub=null;
+function go(t){tab=t;sub=null;view.scrollTop=0;
   document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('on',e.dataset.t===t));
   render();view.scrollTop=0}
 function open2(s,a){sub=s;subArg=a;render();view.scrollTop=0}
@@ -563,7 +584,7 @@ let holdT=null;
 function holdB(on){if(on){holdT=setTimeout(()=>{amt='';paint();buzz(25)},550)}else clearTimeout(holdT)}
 function paint(){
   const el=document.getElementById('amt');
-  el.textContent=amt?grp(amt):'0';
+  el.textContent=LTR(amt?grp(amt):'0');
   el.style.color=(kind==='i'||(kind==='t'&&dir==='out'))?'var(--green)':'var(--ink)';
   const v=parseFloat(amt)>0;
   document.getElementById('amtSub').textContent =
@@ -801,7 +822,8 @@ function render(){
     fab.classList.toggle('hidden',!!sub||tab!=='home');
     tabbar.classList.toggle('hidden',!!sub);
     const V=sub?({cats:vCats,fixed:vFixed,plans:vPlans,notes:vNotes,set:vSet,
-      goal:vGoal,reports:vReports,report:vReport,srcs:vSrcs})[sub]:({home:vHome,goals:vGoals,tx:vTx,ai:vAI})[tab];
+      goal:vGoal,reports:vReports,report:vReport,srcs:vSrcs})[sub]
+    :({home:vHome,goals:vGoals,tx:vTx,ai:vAI,exp:vClose})[tab];
     view.innerHTML=V?V():'';
     view.firstElementChild&&view.firstElementChild.classList.add('fade');
   }catch(e){ oops(e) }
@@ -867,13 +889,24 @@ function vHome(){
        <div class="lbl">פנוי להוצאה היום</div>
        <div class="big" style="font-size:44px;margin:2px 0 4px">${nis(sd)}</div>
        <div class="cap">היום הוצאת ${nis(st)} · ${daysLeft()} ימים למשכורת</div>
-     </div>${ring(1-pct,pct>1?'--red':'--accent',66,9,'💳')}</div>
-     <div class="bar" style="margin-top:12px"><i style="width:${Math.min(100,pct*100)}%;
-       background:var(${pct>1?'--red':'--green'})"></i></div>
-     <hr class="s">
-     <div class="cap" style="line-height:1.6">
-       ${nis(income())} הכנסה − ${nis(upcoming())} התחייבויות − ${nis(netSaved())} לקופות
-       − ${nis(cycleOut())} שהוצאת ÷ ${daysLeft()} ימים</div>
+     </div>${ring(pct,pct>1?'--red':pct>.75?'--orange':'--green',66,9,
+       pct>0?Math.round(pct*100)+'%':'0%')}</div>
+     ${st>0?`<div class="bar" style="margin-top:12px"><i style="width:${Math.min(100,pct*100)}%;
+       background:var(${pct>1?'--red':pct>.75?'--orange':'--green'})"></i></div>`:''}
+     <div class="rowx" onclick="D.seen.calc=!D.seen.calc;commit()"
+       style="margin-top:11px;cursor:pointer;display:flex;align-items:center;gap:6px">
+       <span class="cap" style="color:var(--accent);font-weight:600">
+         ${D.seen.calc?'הסתר':'איך חושב המספר'} ${D.seen.calc?'▲':'▼'}</span></div>
+     ${D.seen.calc?`<div class="cap" style="margin-top:8px;line-height:1.9;background:var(--fill);
+       padding:11px 13px;border-radius:12px">
+       <div class="row"><span style="flex:1">הכנסה</span><b class="mono">${nis(income())}</b></div>
+       <div class="row"><span style="flex:1">פחות התחייבויות</span><b class="mono">−${nis(upcoming())}</b></div>
+       <div class="row"><span style="flex:1">פחות לקופות</span><b class="mono">−${nis(netSaved())}</b></div>
+       <div class="row"><span style="flex:1">פחות מה שהוצאת</span><b class="mono">−${nis(cycleOut())}</b></div>
+       <hr class="s" style="margin:7px 0">
+       <div class="row"><span style="flex:1">נשאר לחלוקה</span><b class="mono">${nis(leftMonth())}</b></div>
+       <div class="row"><span style="flex:1">חלקי ${daysLeft()} ימים</span>
+         <b class="mono" style="color:var(--accent)">${nis(sd)}</b></div></div>`:''}
    </div>
 
    ${overdueFixed().length?`<div class="card" onclick="open2('fixed')"
@@ -884,11 +917,11 @@ function vHome(){
          <div class="cap" style="margin-top:2px;line-height:1.4">
            ${nis(overdueFixed().reduce((s,f)=>s+f.a,0))} שעדיין לא נרשמו ›</div></div></div></div>`:''}
    <div class="card">
-     <div class="row"><div style="flex:1">
+     <div class="row" style="align-items:flex-start"><div style="flex:1">
        <div class="lbl">יתרה בחשבון</div>
-       <div class="big" style="font-size:25px">${nis(balance())}</div></div>
+       <div class="big" style="font-size:26px;margin-top:2px">${nis(balance())}</div></div>
        <div style="text-align:left"><div class="lbl">מחזור ${D.cycle.no}</div>
-         <div class="cap">יום ${cycleDay()} מתוך ${cycleLen()}</div></div></div>
+         <div class="cap" style="margin-top:3px">יום ${cycleDay()} מתוך ${cycleLen()}</div></div></div>
      ${pendingCredit()>0?`<hr class="s">
      <div class="row" onclick="open2('srcs')" style="cursor:pointer">
        <div style="flex:1"><div class="cap" style="line-height:1.5">
@@ -901,10 +934,15 @@ function vHome(){
        <div class="cap" style="flex:1;line-height:1.5">
          מהמשכורת הבאה <b style="color:var(--ink)">${nis(nextCommit())}</b> כבר מחויבים</div>
        <span class="cap">›</span></div>`:''}
-     <div class="row" style="margin-top:11px;gap:7px">
-       <button class="btn soft tiny" style="flex:1" onclick="open2('fixed')">🔁 קבועות</button>
-       <button class="btn soft tiny" style="flex:1" onclick="open2('plans')">🧾 תשלומים</button>
-       <button class="btn soft tiny" style="flex:1" onclick="open2('srcs')">💳 אמצעים</button></div>
+     <div class="row" style="margin-top:13px;gap:6px">
+       ${[['🔁','קבועות','fixed',pendFixed().length],
+          ['🧾','תשלומים','plans',pendPlans().length],
+          ['💳','אמצעים','srcs',0]].map(([e,l,v,n])=>
+       `<button class="btn soft" style="flex:1;padding:10px 4px;font-size:12px;position:relative"
+         onclick="open2('${v}')"><div style="font-size:16px;line-height:1.5">${e}</div>${l}
+         ${n?`<span style="position:absolute;top:5px;left:6px;background:var(--orange);color:#fff;
+           font-size:9.5px;font-weight:700;min-width:16px;height:16px;border-radius:999px;
+           display:grid;place-items:center;padding:0 4px">${n}</span>`:''}</button>`).join('')}</div>
    </div>
 
    ${D.goals.length?`<div class="card">
@@ -1560,15 +1598,7 @@ function vAI(){
        <div style="min-width:0"><div style="font-size:14.5px;font-weight:640;line-height:1.35">${a.t}</div>
          <div class="cap" style="margin-top:4px;line-height:1.55">${a.r}</div></div></div>
      <button class="btn ghost tiny" style="width:100%;margin-top:10px" onclick="doAct(${i})">✦ ${a.b}</button></div>`).join('')}
-   <div class="card" style="background:var(--accent-soft);border:0">
-     <b class="h">סגירת מחזור</b>
-     <div class="cap" style="line-height:1.6;color:var(--ink)">
-       מחזור ${D.cycle.no} · יום ${cycleDay()} מתוך ${cycleLen()}. סגירה מפיקה דוח תכנון־מול־ביצוע
-       ומאפסת את ההוצאות הקבועות והתשלומים לחודש הבא.</div>
-     <button class="btn" style="margin-top:12px" onclick="salaryIn()">💰 משכורת נכנסה — סגור מחזור</button>
-     ${D.cycles.length?`<button class="btn soft" style="margin-top:8px" onclick="open2('reports')">
-       📄 דוחות קודמים (${D.cycles.length})</button>`:''}
-   </div>
+
    <div style="height:16px"></div></div></div>`;
 }
 function doAct(i){const P=insights(),a=P[D.insightIx%P.length].a[i];if(a&&a.f)a.f()}
@@ -1586,9 +1616,71 @@ function salaryIn(){
   },'סגור מחזור ופתח חדש');
 }
 
+/* ---------- סגירת מחזור ודוחות ---------- */
+function vClose(){
+  const rows=perf(), P=rows.reduce((s,r)=>s+r.plan,0), A=rows.reduce((s,r)=>s+r.act,0);
+  const byG={}; rows.forEach(r=>(byG[r.g]=byG[r.g]||[]).push(r));
+  return `<div><div class="title">סגירת מחזור</div><div class="pad">
+   <div class="card">
+     <div class="row" style="margin-bottom:11px">
+       <b style="font-size:17px;font-weight:700">מחזור ${D.cycle.no}</b><div class="sp"></div>
+       <span class="cap">יום ${cycleDay()} מתוך ${cycleLen()}</span></div>
+     <div class="row" style="text-align:center">
+       <div style="flex:1"><div class="lbl">תוכנן</div><div class="mono" style="font-weight:750">${nis(P)}</div></div>
+       <div style="width:1px;height:30px;background:var(--sep)"></div>
+       <div style="flex:1"><div class="lbl">בפועל</div><div class="mono" style="font-weight:750">${nis(A)}</div></div>
+       <div style="width:1px;height:30px;background:var(--sep)"></div>
+       <div style="flex:1"><div class="lbl">הפרש</div>
+         <div class="mono" style="font-weight:750;color:var(${P-A>=0?'--green':'--red'})">${nisSigned(P-A)}</div></div></div>
+     <div class="bar" style="margin-top:12px"><i style="width:${Math.min(100,P?A/P*100:0)}%;
+       background:var(${P-A>=0?'--green':'--red'})"></i></div>
+     <div class="cap" style="margin-top:9px;line-height:1.55">
+       ${P>0?(P-A>=0?`אתה בתוך התכנון עם עודף של ${nis(P-A)}.`:`חריגה של ${nis(A-P)} מהתכנון.`)
+        :'עוד לא הגדרת תקציב מתוכנן לסעיפים.'}</div>
+   </div>
+
+   <div class="card" style="background:var(--accent-soft);border:0">
+     <b class="h">משכורת נכנסה?</b>
+     <div class="cap" style="line-height:1.6;color:var(--ink)">
+       סגירת מחזור שומרת דוח תכנון־מול־ביצוע, מאפסת את ההוצאות הקבועות והתשלומים
+       לחודש הבא, ופותחת מחזור חדש.</div>
+     <button class="btn" style="margin-top:12px" onclick="salaryIn()">💰 סגור מחזור ופתח חדש</button>
+   </div>
+
+   ${rows.length?`<div class="card">
+     <b class="h">תכנון מול ביצוע</b>
+     <div class="row cap" style="font-weight:640;font-size:11.5px;padding-bottom:7px">
+       <span style="flex:1">סעיף</span><span style="width:54px;text-align:left">תוכנן</span>
+       <span style="width:54px;text-align:left">בפועל</span><span style="width:54px;text-align:left">הפרש</span></div>
+     ${Object.entries(byG).map(([g,rs])=>`
+       <div style="font-size:13.5px;font-weight:660;margin:11px 0 3px;color:var(${rs[0].gc})">${rs[0].ge} ${esc(g)}</div>
+       ${rs.map(r=>`<div class="row" style="font-size:13px;padding:5px 0;border-bottom:1px solid var(--sep)">
+         <span style="flex:1">${r.e} ${esc(r.n)}</span>
+         <span class="mono" style="width:54px;text-align:left;color:var(--muted)">${nis(r.plan)}</span>
+         <span class="mono" style="width:54px;text-align:left">${nis(r.act)}</span>
+         <span class="mono" style="width:54px;text-align:left;color:var(${r.plan-r.act>=0?'--green':'--red'})">
+           ${nisSigned(r.plan-r.act)}</span></div>`).join('')}`).join('')}
+   </div>`:`<div class="card" style="text-align:center;padding:24px">
+     <div class="cap" style="line-height:1.6">אין עדיין תנועות במחזור הזה.<br>
+       רשום כמה הוצאות ותראה כאן את התמונה המלאה.</div></div>`}
+
+   ${D.cycles.length?`<div class="card">
+     <div class="row"><b class="h" style="margin:0">דוחות קודמים</b><div class="sp"></div>
+       <span class="cap" onclick="open2('reports')" style="color:var(--accent)">הכל ›</span></div>
+     ${D.cycles.slice(0,3).map((c,i)=>{const p=c.rows.reduce((s,r)=>s+r.plan,0),
+       a=c.rows.reduce((s,r)=>s+r.act,0);
+       return `<div class="tx" style="padding:10px 0;cursor:pointer" onclick="open2('report',${i})">
+         <div style="flex:1"><div style="font-size:14.5px;font-weight:560">מחזור ${c.no} · ${fMonth(c.start)}</div>
+           <div class="cap" style="font-size:11.5px">הכנסה ${nis(c.income)}</div></div>
+         <div class="mono" style="color:var(${p-a>=0?'--green':'--red'})">${nisSigned(p-a)}</div>
+         <span class="cap">›</span></div>`}).join('<hr class="s" style="margin:2px 0">')}
+   </div>`:''}
+   <div style="height:16px"></div></div></div>`;
+}
+
 /* ---------- דוחות ---------- */
 function vReports(){
-  return `<div><div class="back" onclick="go('ai')">‹ תובנות</div>
+  return `<div><div class="back" onclick="go('exp')">‹ סגירה</div>
    <div class="title">דוחות</div><div class="pad">
    ${!D.cycles.length?`<div class="card" style="text-align:center;padding:26px">
      <div class="cap">עוד לא נסגר מחזור.</div></div>`:''}
@@ -1598,7 +1690,7 @@ function vReports(){
        <b style="font-size:15px;font-weight:660">מחזור ${c.no} · ${fMonth(c.start)}</b>
        <div class="cap" style="margin-top:3px">${fShort(c.start)} — ${fShort(c.end)} · הכנסה ${nis(c.income)}</div></div>
        <div style="text-align:left"><div class="mono" style="font-weight:750;
-         color:var(${P-A>=0?'--green':'--red'})">${P-A>=0?'+':'−'}${nis(Math.abs(P-A))}</div>
+         color:var(${P-A>=0?'--green':'--red'})">${nisSigned(P-A)}</div>
          <div class="cap" style="font-size:10.5px">מול התכנון</div></div></div></div>`}).join('')}
    <div style="height:16px"></div></div></div>`;
 }
@@ -1615,7 +1707,7 @@ function vReport(){
        <div style="flex:1"><div class="lbl">בפועל</div><div class="mono" style="font-weight:750">${nis(A)}</div></div>
        <div style="width:1px;height:30px;background:var(--sep)"></div>
        <div style="flex:1"><div class="lbl">הפרש</div><div class="mono" style="font-weight:750;
-         color:var(${P-A>=0?'--green':'--red'})">${P-A>=0?'+':'−'}${nis(Math.abs(P-A))}</div></div></div>
+         color:var(${P-A>=0?'--green':'--red'})">${nisSigned(P-A)}</div></div></div>
      <div class="bar" style="margin-top:12px"><i style="width:${Math.min(100,P?A/P*100:0)}%;
        background:var(${P-A>=0?'--green':'--red'})"></i></div>
      <div class="cap" style="margin-top:9px;line-height:1.55">
@@ -1632,10 +1724,11 @@ function vReport(){
          <span class="mono" style="width:54px;text-align:left;color:var(--muted)">${nis(r.plan)}</span>
          <span class="mono" style="width:54px;text-align:left">${nis(r.act)}</span>
          <span class="mono" style="width:54px;text-align:left;color:var(${r.plan-r.act>=0?'--green':'--red'})">
-           ${r.plan-r.act>=0?'+':'−'}${nis(Math.abs(r.plan-r.act))}</span></div>`).join('')}`).join('')}
+           ${nisSigned(r.plan-r.act)}</span></div>`).join('')}`).join('')}
    </div>
    <div style="height:16px"></div></div></div>`;
 }
+function plain(x){return String(x).replace(/[\u2066\u2069]/g,'')}
 function csv(i){
   const c=D.cycles[i];
   let out='\uFEFF"קטגוריה ראשית","סעיף הוצאה","תקציב מתוכנן","ביצוע בפועל","הפרש","הערות והתנהלות"\r\n';
