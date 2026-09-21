@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-165 -96 330 192" width="1320" height="768" font-family="ui-monospace,Menlo,Consolas,monospace">
+<title>VELOUREA V L R — construction grid</title>
+<rect x="-165" y="-96" width="330" height="192" fill="#fbfaf8"/>
+<g stroke="#e2ded7" stroke-width="0.25">
+<line x1="-120" y1="-62" x2="-120" y2="62"/>
+<line x1="-110" y1="-62" x2="-110" y2="62"/>
+<line x1="-100" y1="-62" x2="-100" y2="62"/>
+<line x1="-90" y1="-62" x2="-90" y2="62"/>
+<line x1="-80" y1="-62" x2="-80" y2="62"/>
+<line x1="-70" y1="-62" x2="-70" y2="62"/>
+<line x1="-60" y1="-62" x2="-60" y2="62"/>
+<line x1="-50" y1="-62" x2="-50" y2="62"/>
+<line x1="-40" y1="-62" x2="-40" y2="62"/>
+<line x1="-30" y1="-62" x2="-30" y2="62"/>
+<line x1="-20" y1="-62" x2="-20" y2="62"/>
+<line x1="-10" y1="-62" x2="-10" y2="62"/>
+<line x1="0" y1="-62" x2="0" y2="62"/>
+<line x1="10" y1="-62" x2="10" y2="62"/>
+<line x1="20" y1="-62" x2="20" y2="62"/>
+<line x1="30" y1="-62" x2="30" y2="62"/>
+<line x1="40" y1="-62" x2="40" y2="62"/>
+<line x1="50" y1="-62" x2="50" y2="62"/>
+<line x1="60" y1="-62" x2="60" y2="62"/>
+<line x1="70" y1="-62" x2="70" y2="62"/>
+<line x1="80" y1="-62" x2="80" y2="62"/>
+<line x1="90" y1="-62" x2="90" y2="62"/>
+<line x1="100" y1="-62" x2="100" y2="62"/>
+<line x1="110" y1="-62" x2="110" y2="62"/>
+<line x1="120" y1="-62" x2="120" y2="62"/>
+<line x1="-130" y1="-60" x2="130" y2="-60"/>
+<line x1="-130" y1="-50" x2="130" y2="-50"/>
+<line x1="-130" y1="-40" x2="130" y2="-40"/>
+<line x1="-130" y1="-30" x2="130" y2="-30"/>
+<line x1="-130" y1="-20" x2="130" y2="-20"/>
+<line x1="-130" y1="-10" x2="130" y2="-10"/>
+<line x1="-130" y1="0" x2="130" y2="0"/>
+<line x1="-130" y1="10" x2="130" y2="10"/>
+<line x1="-130" y1="20" x2="130" y2="20"/>
+<line x1="-130" y1="30" x2="130" y2="30"/>
+<line x1="-130" y1="40" x2="130" y2="40"/>
+<line x1="-130" y1="50" x2="130" y2="50"/>
+<line x1="-130" y1="60" x2="130" y2="60"/>
+</g>
+<g fill="#cfc8bd"><defs><g id="h">
+      <path d="M-5,-51.429 L0,-60 L35,0 L0,60 L-5,51.429
+               L-5,31.582 L0,40.154 L23.423,0 L0,-40.154 L-5,-31.582 Z"/>
+      <path d="M35,-60 H45 V60 H35 Z"/>
+      <path d="M45,-10 H75 V10 H45 Z"/>
+      <path d="M85,-60 H95 V60 H85 Z"/>
+      <path fill-rule="evenodd" d="M95,-60 H107.5 A17.5,17.5 0 0 1 107.5,-25 H95 Z
+                                   M95,-50 H107.5 A7.5,7.5 0 0 1 107.5,-35 H95 Z"/>
+      <path fill-rule="evenodd" d="M95,25 H107.5 A17.5,17.5 0 0 1 107.5,60 H95 Z
+                                   M95,35 H107.5 A7.5,7.5 0 0 1 107.5,50 H95 Z"/>
+      <path d="M113.066,-25 L127.5,0 L113.066,25
+               L101.519,25 L115.953,0 L101.519,-25 Z"/>
+    </g></defs><use href="#h"/><use href="#h" transform="scale(-1 1)"/></g>
+<rect x="-127.5" y="-60" width="255" height="120" fill="none" stroke="#9a9186" stroke-width="0.4"/>
+<g stroke="#2f6fb5" stroke-width="0.4" stroke-dasharray="3 2">
+<line x1="-90" y1="-70" x2="-90" y2="70"/>
+<line x1="-40" y1="-70" x2="-40" y2="70"/>
+<line x1="0" y1="-70" x2="0" y2="70"/>
+<line x1="40" y1="-70" x2="40" y2="70"/>
+<line x1="90" y1="-70" x2="90" y2="70"/>
+<line x1="-140" y1="0" x2="140" y2="0"/></g>
+<g fill="none" stroke="#c2352b" stroke-width="0.45">
+<circle cx="107.5" cy="42.5" r="17.5"/><circle cx="107.5" cy="42.5" r="7.5"/>
+<circle cx="107.5" cy="-42.5" r="17.5"/><circle cx="107.5" cy="-42.5" r="7.5"/>
+<circle cx="-107.5" cy="42.5" r="17.5"/><circle cx="-107.5" cy="42.5" r="7.5"/>
+<circle cx="-107.5" cy="-42.5" r="17.5"/><circle cx="-107.5" cy="-42.5" r="7.5"/>
+</g>
+<g fill="none" stroke="#1e7a5a" stroke-width="0.45">
+<path d="M0,-60 L35,0 L0,60"/><path d="M0,-40.154 L23.423,0 L0,40.154"/>
+<path d="M0,-60 L-35,0 L0,60"/><path d="M0,-40.154 L-23.423,0 L0,40.154"/>
+</g>
+<g fill="#c2352b">
+<circle cx="35" cy="0" r="1.6"/>
+<circle cx="-35" cy="0" r="1.6"/>
+</g>
+<g stroke="#7a3fa0" stroke-width="0.4" stroke-dasharray="2 1.5">
+<line x1="127.5" y1="0" x2="113.066" y2="-25"/><line x1="127.5" y1="0" x2="127.5" y2="-30"/>
+<line x1="-127.5" y1="0" x2="-113.066" y2="-25"/></g>
+<path d="M127.5,-20 A20,20 0 0 0 117.5,-17.321" fill="none" stroke="#7a3fa0" stroke-width="0.5"/>
+<text x="117" y="-22" font-size="5" fill="#7a3fa0">30°</text>
+<g stroke="#5c5751" stroke-width="0.35" fill="#5c5751" font-size="5">
+<line x1="-139" y1="-60" x2="-139" y2="60"/><line x1="-142" y1="-60" x2="-136" y2="-60"/><line x1="-142" y1="60" x2="-136" y2="60"/>
+<text x="-162" y="2">H = 120</text>
+<line x1="-127.5" y1="72" x2="127.5" y2="72"/><line x1="-127.5" y1="69" x2="-127.5" y2="75"/><line x1="127.5" y1="69" x2="127.5" y2="75"/>
+<text x="-14" y="80">W = 255</text>
+<line x1="0" y1="-72" x2="40" y2="-72"/><line x1="0" y1="-75" x2="0" y2="-69"/><line x1="40" y1="-75" x2="40" y2="-69"/>
+<text x="14" y="-75">40</text>
+<line x1="40" y1="-72" x2="90" y2="-72"/><line x1="40" y1="-75" x2="40" y2="-69"/><line x1="90" y1="-75" x2="90" y2="-69"/>
+<text x="58" y="-75">50</text>
+<line x1="-45" y1="-66" x2="-35" y2="-66"/><line x1="-45" y1="-68" x2="-45" y2="-64"/><line x1="-35" y1="-68" x2="-35" y2="-64"/>
+<text x="-64" y="-64.5">u = 10</text></g>
+<g font-size="4.4" fill="#5c5751">
+<text x="88" y="-64.5" fill="#c2352b">bowl 17.5 / 7.5</text>
+<text x="-20" y="-64.5" fill="#1e7a5a">V  35 x 60</text>
+<text x="42" y="-4" fill="#c2352b">tangent</text>
+<text x="131" y="4" fill="#7a3fa0">tip</text>
+<text x="-162" y="-84" font-size="6" fill="#2b2b2b">VELOURÉA — V · L · R   |   stroke u = 10 = H/12, monoline, double-mirror</text>
+<text x="-162" y="90" font-size="4.4" fill="#5c5751">read centre-out: V (rhombus) · L (stem + 2u foot) · R (obround bowl + 30° leg) · V vertex tangent to the L stem</text>
+</g></svg>
