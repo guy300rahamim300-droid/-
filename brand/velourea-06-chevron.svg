@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 120" width="185" height="120"
+     role="img" aria-label="VELOUREA monogram V · V · V — Chevron">
+  <title>VELOUREA — V · V · V — Chevron</title>
+  <!--
+    VELOUREA — V · V · V — Chevron
+    Reference grid, unchanged:  u = 10 (monoline) · H = 120 · W = 185 · stem pitch p = 55
+      big ring/rhombus half-width 50  -> tangent to the outer stem (50 = 55 - 5)
+      blades 30 degrees off vertical, tip on the horizontal axis at x = +-92.5
+    Double-mirror symmetry: only the right half is drawn; scale(-1 1) makes the left.
+    The half crosses x = 0 slightly so the copies overlap and no hairline seam appears.
+  -->
+  <defs>
+    <g id="h">
+      <path d="M-5,-23.111 L0,-32 L18,0 L0,32 L-5,23.111 L-5,2.714 L0,11.603 L6.527,0 L0,-11.603 L-5,-2.714 Z"/>
+      <path d="M15.359,-60 L50,0 L15.359,60 L3.812,60 L38.453,0 L3.812,-60 Z"/>
+      <path d="M57.859,-60 L92.5,0 L57.859,60 L46.312,60 L80.953,0 L46.312,-60 Z"/>
+    </g>
+  </defs>
+  <g transform="translate(92.5 60)" fill="#000">
+    <use href="#h"/>
+    <use href="#h" transform="scale(-1 1)"/>
+  </g>
+</svg>

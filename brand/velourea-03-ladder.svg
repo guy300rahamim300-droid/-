@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 120" width="185" height="120"
+     role="img" aria-label="VELOUREA monogram V · E — Ladder">
+  <title>VELOUREA — V · E — Ladder</title>
+  <!--
+    VELOUREA — V · E — Ladder
+    Reference grid, unchanged:  u = 10 (monoline) · H = 120 · W = 185 · stem pitch p = 55
+      big ring/rhombus half-width 50  -> tangent to the outer stem (50 = 55 - 5)
+      blades 30 degrees off vertical, tip on the horizontal axis at x = +-92.5
+    Double-mirror symmetry: only the right half is drawn; scale(-1 1) makes the left.
+    The half crosses x = 0 slightly so the copies overlap and no hairline seam appears.
+  -->
+  <defs>
+    <g id="h">
+      <path d="M-5,-60 H5 V60 H-5 Z"/>
+      <path d="M-5,-60 H40 V-50 H-5 Z"/>
+      <path d="M-5,-5 H40 V5 H-5 Z"/>
+      <path d="M-5,50 H40 V60 H-5 Z"/>
+      <path d="M50,-60 H60 V60 H50 Z"/>
+      <path d="M57.859,-60 L92.5,0 L57.859,60 L46.312,60 L80.953,0 L46.312,-60 Z"/>
+    </g>
+  </defs>
+  <g transform="translate(92.5 60)" fill="#000">
+    <use href="#h"/>
+    <use href="#h" transform="scale(-1 1)"/>
+  </g>
+</svg>
