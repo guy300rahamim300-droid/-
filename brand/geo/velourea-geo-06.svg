@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 120" width="185" height="120"
+     role="img" aria-label="VELOUREA geometric monogram 06 ◇·◇·V">
+  <title>VELOURÉA — 06 ◇·◇·V</title>
+  <!--
+    Built on the reference grid, unchanged:
+      u = 10  monoline stroke      H = 120 (12u)      W = 185      p = 55 stem pitch
+      R = 30 (=H/4)  r = 20  d = 20 (arc centre offset -> 2u straight run)
+      Rb = 17.5 / 7.5            alpha = 30 deg blade, tip on the mid axis at x = +-92.5
+      body half-width 50 -> tangent to the outer stem (50 = 55 - 5)
+    Double-mirror symmetry: the right half is drawn, scale(-1 1) makes the left;
+    it crosses x=0 slightly so the copies overlap and no hairline seam appears.
+  -->
+  <g transform="translate(92.5 60)" fill="#000">
+    <path fill-rule="evenodd" d="M-46.312,-60 L-50,-60 L-57.859,-60 L-60,-60 L-60,-56.292 L-92.5,0 L-60,56.292 L-60,60 L-57.859,60 L-50,60 L-46.312,60 L-50,53.612 L-50,0 L-50,-53.612 Z M-60,36.292 L-80.953,0 L-60,-36.292 Z M0,60 L50,0 L0,-60 L-50,0 Z M0,44.38 L-36.983,0 L0,-44.38 L36.983,0 Z M0,40 L30,0 L0,-40 L-30,0 Z M0,23.333 L-17.5,0 L0,-23.333 L17.5,0 Z M50,-53.612 L50,0 L50,53.612 L46.312,60 L50,60 L57.859,60 L60,60 L60,56.292 L92.5,0 L60,-56.292 L60,-60 L57.859,-60 L50,-60 L46.312,-60 Z M80.953,0 L60,36.292 L60,-36.292 Z"/>
+  </g>
+</svg>
