@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 120" width="185" height="120"
+     role="img" aria-label="VELOUREA V O monogram">
+  <title>VELOUREA - V.O mirrored monogram</title>
+  <!--
+    VELOUREA - V.O monogram. Same grid as the reference mark:
+      u = 10 monoline · H = 120 · W = 185 · stem pitch 55 · double-mirror symmetry
+    O  = obround ring, caps r=50 / r=40; its straight side is tangent to the V stems.
+    V  = stem + blade, meeting in a point on the horizontal axis (28.44 deg off vertical).
+  -->
+  <defs>
+    <g id="half">
+      <!-- O: obround ring, tangent to both stems -->
+      <path d="M-5,-59.749 A50,50 0 0 1 50,-10 V10 A50,50 0 0 1 -5,59.749
+               V49.686 A40,40 0 0 0 40,10 V-10 A40,40 0 0 0 -5,-49.686 Z"/>
+      <!-- V spine: full-height stem on the outer axis -->
+      <path d="M50,-60 H60 V60 H50 Z"/>
+      <!-- V blades: from the stem's corners to a point on the horizontal axis -->
+      <path d="M60,-60 L92.5,0 L60,60 L50,57.466 L81.127,0 L50,-57.466 Z"/>
+    </g>
+  </defs>
+  <g transform="translate(92.5 60)" fill="#000">
+    <use href="#half"/>
+    <use href="#half" transform="scale(-1 1)"/>
+  </g>
+</svg>

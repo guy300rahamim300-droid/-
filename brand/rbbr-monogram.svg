@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 120" width="185" height="120"
+     role="img" aria-label="RB BR mirrored monogram">
+  <title>RB/BR mirrored monogram - vector reconstruction</title>
+  <!--
+    RB / BR mirrored monogram — vector reconstruction on an exact grid.
+    Unit system (1 unit = H/120; the whole mark is monoline):
+      u   = 10      stroke weight, every stroke
+      H   = 120     height (12u)          W = 185      width
+      p   = 55      stem pitch (5.5u)     stems are 10 wide, full height
+      R   = 30      bowl outer radius (3u = H/4)      r  = 20  bowl inner radius
+      d   = 20      bowl arc centre, offset from the stem axis (flat run = 2u)
+      Rb  = 17.5    R-bowl outer radius   rb = 7.5     R-bowl inner radius
+      leg = 30 deg off vertical, tip on the horizontal axis at x = +-92.5
+    Only the right half is drawn; scale(-1 1) makes the left.
+    Each half spans a little past x=0 so the two copies overlap (no seam).
+    Every counter is an obround (stadium): two straights + a semicircle.
+  -->
+  <defs>
+    <g id="half">
+      <!-- centre B + mirrored B: one shared stem, four bowls, cusped waist -->
+      <path fill-rule="evenodd"
+            d="M-5,-60 H20 A30,30 0 0 1 20,0 A30,30 0 0 1 20,60 H-5 Z
+               M5,-50 H20 A20,20 0 0 1 20,-10 H5 Z
+               M5,10 H20 A20,20 0 0 1 20,50 H5 Z"/>
+      <!-- outer R: full-height stem -->
+      <path d="M50,-60 H60 V60 H50 Z"/>
+      <!-- outer R: upper and lower bowls -->
+      <path fill-rule="evenodd" d="M60,-60 H72.5 A17.5,17.5 0 0 1 72.5,-25 H60 Z
+                                   M60,-50 H72.5 A7.5,7.5 0 0 1 72.5,-35 H60 Z"/>
+      <path fill-rule="evenodd" d="M60,25 H72.5 A17.5,17.5 0 0 1 72.5,60 H60 Z
+                                   M60,35 H72.5 A7.5,7.5 0 0 1 72.5,50 H60 Z"/>
+      <!-- the two legs, meeting in a point on the horizontal axis -->
+      <path d="M73.447,-33 L92.5,0 L73.447,33 L61.9,33 L80.953,0 L61.9,-33 Z"/>
+    </g>
+  </defs>
+  <g transform="translate(92.5 60)" fill="#000">
+    <use href="#half"/>
+    <use href="#half" transform="scale(-1 1)"/>
+  </g>
+</svg>
